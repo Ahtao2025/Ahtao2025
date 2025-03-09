@@ -1,0 +1,996 @@
+---
+title: 'Assignment 2: Data and Index'
+author: "STA3005 Statistical Computing"
+date: 'Due date: Mar 3, 11:59pm'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, autodep=TRUE, cache.comments=TRUE)
+```
+
+-   Name: **Yuntao Xue**
+-   Student ID: **122040070**
+-   Collaborated with: **Li Zichen**
+
+You can collaborate with your classmates, but you must identify their names above, and you must submit **your own** lab as an knitted (complied) PDF or html file on blackboard system.
+
+# States data set
+
+Below we construct a data frame, of 50 states by 10 variables. The first 8 variables are numeric and the last 2 are factors. The numeric variables here come from the built-in `state.x77` matrix, which records various demographic factors on 50 US states, measured in the 1970s. You can learn more about this state data set by typing `?state.x77` into your R console.
+
+```{r}
+state.df = data.frame(state.x77, Region=state.region, Division=state.division)
+```
+
+# Q1. Basic data frame manipulations
+
+-   **1a.** Add a column to `state.df`, containing the state abbreviations that are stored in the built-in vector `state.abb`. Name this column `Abbr`. You can do this in (at least) two ways: by using a call to `data.frame()`, or by directly defining `state.df$Abbr`. Display the first 5 rows and all 11 columns of the new `state.df`.
+
+```{r q1a}
+# YOUR CODE GOES HERE
+# method 1 
+state.df <- data.frame(state.df, Abbr = state.abb)
+head(state.df, 5)
+
+# method 2
+state.df$abbr <- state.abb
+head(state.df, 5)
+
+
+
+```
+
+-   **1b.** Remove the `Region` column from `state.df`. You can do this in (at least) two ways: by using negative indexing, or by directly setting `state.df$Region` to be `NULL`. Display the first 5 rows and all 10 columns of `state.df`.
+
+```{r q1b}
+# YOUR CODE GOES HERE
+# method 1
+index_region <- which(names(state.df) == 'Region')
+state.df <- state.df[, - index_region]
+head(state.df, 5)
+
+# method 2
+state.df$Region <- NULL
+head(state.df, 5)
+```
+
+-   **1c.** Add two columns to `state.df`, containing the x and y coordinates (longitude and latitude, respectively) of the center of the states, that are stored in the (existing) list `state.center`. Hint: take a look at this list in the console, to see what its elements are named. Name these two columns `Center.x` and `Center.y`. Display the first 5 rows and all 12 columns of `state.df`.
+
+```{r q1c}
+# YOUR CODE GOES HERE
+state.df$Center.x <- state.center$x
+state.df$Center.y <- state.center$y
+head(state.df, 5)
+
+```
+
+-   **1d.** Make a new data frame which contains only those states whose longitude is less than -100. Do this in two different ways: using manual indexing, and `subset`(). Check that they are equal to each other, using an appropriate function call.
+
+```{r q1d}
+# YOUR CODE GOES HERE
+# way 1
+df_new_1 <-  
+  state.df[state.df$Center.x < -100, ] 
+
+# way 2
+df_new_2 <- 
+  subset(state.df, 
+         Center.x < -100)
+head(df_new_1, 5)
+head(df_new_2, 5)
+
+#check euqality
+if(identical(df_new_1, df_new_2) == TRUE)
+{cat("they're equal")}else
+    {cat("they're not equal")}
+
+```
+
+-   **1e.** Make a new data frame which contains only the states whose longitude is less than -100, and whose murder rate is above 9%. Print this new data frame to the console. Among the states in this new data frame, which has the highest average life expectancy?
+
+```{r q1e}
+# YOUR CODE GOES HERE
+df_new <- 
+  state.df[state.df$Murder > 9 
+           & 
+             state.df$Center.x < -100, ]
+print(df_new)
+
+max_LF <- 
+  max(df_new$Life.Exp)
+id <- 
+  which.max(df_new$Life.Exp) 
+name_state <- rownames(df_new[id, ])
+cat("the highest life expectancy:", 
+    max_LF, 
+    "\n")
+cat("the index of the one has the highest life expectancy:", 
+    id, 
+    "\n")
+cat("the state has the highest average life expextancy:", 
+    name_state,
+    "\n")
+
+```
+
+# Prostate cancer data set
+
+Below we read in the prostate cancer data set in the first assignment. You can remind yourself about what's been measured by looking back it.
+
+```{r}
+pros.dat = read.table("pros.dat")
+```
+
+# Q2. Practice with the apply family
+
+-   **2a.** Using `sapply()`, calculate the mean of each variable. Also, calculate the standard deviation of each variable. Each should require just one line of code. Display your results.
+
+```{r q2a}
+# YOUR CODE GOES HERE
+mean <- sapply(pros.dat, mean)
+sd <- sapply(pros.dat, sd)
+
+print(mean)
+print(sd)
+
+```
+
+-   **2b.** Let's plot each variable against SVI. Using `lapply()`, plot each column, excluding SVI, on the y-axis with SVI on the x-axis. This should require just one line of code.
+
+```{r q2b}
+# YOUR CODE GOES HERE
+lapply(pros.dat[ , !names(pros.dat) %in% "svi"],  # exclude SVI
+       function(x) plot(pros.dat$svi, 
+                        x,             # SVI on the X-axis
+                        main = paste("SVI vs", 
+                                     deparse(substitute(x)))))
+```
+
+-   **2c.** Now, use `lapply()` to perform t-tests for each variable in the data set, between SVI and non-SVI groups. To be precise, you will perform a t-test for each variable excluding the SVI variable itself. For convenience, we've defined a function `t.test.by.ind()` below, which takes a numeric variable `x`, and then an indicator variable `ind` (of 0s and 1s) that defines the groups. Run this function on the columns of `pros.dat`, excluding the SVI column itself, and save the result as `tests`. What kind of data structure is `tests`? Print it to the console.
+
+```{r}
+t.test.by.ind = function(x, ind) {
+  stopifnot(all(ind %in% c(0, 1)))
+  return(t.test(x[ind == 0], x[ind == 1]))
+}
+```
+
+```{r q2c}
+# YOUR CODE GOES HERE
+tests <- 
+  lapply(pros.dat[ , !names(pros.dat) %in% "svi"], 
+         function(x) t.test.by.ind(x, 
+                                   pros.dat$svi))
+cat("the data structure is: ", 
+    class(tests))
+print(tests)
+
+
+```
+
+-   **2d.** Using `lapply()` again, extract the p-values from the `tests` object you created in the last question, with just a single line of code. Hint: first, take a look at the first element of `tests`, what kind of object is it, and how is the p-value stored? Second, run the command `` `[[`(pros.dat, "lcavol") `` in your console---what does this do? Now use what you've learned to extract p-values from the `tests` object.
+
+```{r q2d}
+# YOUR CODE GOES HERE
+ # extract p-value
+p_values_list <- 
+  lapply(tests, 
+        '[[', "p.value")
+cat("The p-values are: ", 
+    unlist(p_values_list), "\n")
+```
+
+# Rio Olympics data set
+
+Now we're going to examine data from the 2016 Summer Olympics in Rio de Janeiro, taken from <https://github.com/flother/rio2016> (complete data on the 2020 Summer Olympics in Tokyo doesn't appear to be available yet). Below we read in the data and store it as `rio`.
+
+```{r}
+rio = read.csv("rio.csv")
+```
+
+# Q3. More practice with data frames and apply
+
+-   **3a.** What kind of object is `rio`? What are its dimensions and columns names of `rio`? What does each row represent? Is there any missing data?
+
+```{r q3a}
+# YOUR CODE GOES HERE
+cat("the type of 'rio' is:", 
+    class(rio), "\n")
+
+cat("the dimesion is :", 
+    dim(rio), "\n") # return the dimensions
+
+cat("the column names are:", 
+    colnames(rio), "\n")# column names
+
+# check missing value
+if (any(is.na(rio))) {
+  cat("There are missing values in 'rio'.\n")
+} else {
+  cat("There are no missing values in 'rio'.\n")
+}
+```
+
+-   **3b.** Use `rio` to answer the following questions. How many athletes competed in the 2016 Summer Olympics? How many countries were represented? What were these countries, and how many athletes competed for each one? Which country brought the most athletes, and how many was this? Hint: for a factor variable `f`, you can use `table(f)` see how many elements in `f` are in each level of the factor.
+
+```{r q3b}
+# YOUR CODE GOES HERE
+# the number of row is the number of athletes
+cat("the number of atheletes:", 
+    nrow(rio), "\n") 
+
+# total number of nations
+nations <- rio$nationality #list countries
+num_nation <- length(unique(nations)) # sort and unique
+cat("the number of contries:", 
+    (num_nation), "\n")
+
+# athletes per nation
+atheletes_per_nation <- table(rio$nationality)
+cat("Atheletes per country:", "\n")
+print(atheletes_per_nation)
+
+# nation with the largest number of athletes
+max_atheletes_nation <- 
+  names(atheletes_per_nation)[which.max(atheletes_per_nation)] 
+max_atheletes_num <- 
+  max(atheletes_per_nation) # the max value
+cat("contries with the most atheletes:", 
+    max_atheletes_nation, "with", 
+    max_atheletes_num, "atheletes.\n") 
+
+
+
+```
+
+-   **3c.** Please count the medal numbers of three types for each sport and identify which sports have different medal numbers of the three types.
+
+```{r q3c}
+library(dplyr)
+
+# the number of each kind of medals for each sport
+medals_count <- rio %>%
+  group_by(sport) %>%
+  summarise(
+    gold = sum(gold, na.rm = TRUE), # only if NA exist
+    silver = sum(silver, na.rm = TRUE),
+    bronze = sum(bronze, na.rm = TRUE)
+  )
+
+print(medals_count)
+
+# the sports that have different numbers in 3 kinds of medals
+diff_medals_sports <- medals_count %>%
+  filter(gold != silver | silver != bronze | gold != bronze)
+
+print(diff_medals_sports)
+
+```
+
+-   **3d.** Create a column called `total` which adds the number of gold, silver, and bronze medals for each athlete, and add this column to `rio`. Which athlete had the most number of medals and how many was this? Gold medals? Silver medals? In the case of ties, here, display all the relevant athletes.
+
+```{r q3d}
+# YOUR CODE GOES HERE
+# Create the 'total' column
+rio$total <- rio$gold + rio$silver + rio$bronze
+
+# Find the athlete(s) with the most total medals
+max_total_medals <- max(rio$total)
+athletes_most_total <- rio[rio$total == max_total_medals, "name"]
+print("Athletes with the most total medals:")
+print(athletes_most_total)
+
+# Find the athlete(s) with the most gold medals
+max_gold_medals <- max(rio$gold)
+athletes_most_gold <- rio[rio$gold == max_gold_medals, "name" ]
+print("Athletes with the most gold medals:")
+print(athletes_most_gold)
+
+# Find the athlete(s) with the most silver medals
+max_silver_medals <- max(rio$silver)
+athletes_most_silver <- rio[rio$silver == max_silver_medals, "name"]
+print("Athletes with the most silver medals:")
+print(athletes_most_silver)
+```
+
+-   **3e.** Using `tapply()`, calculate the total medal count for each country. Save the result as `total.by.nat`, and print it to the console. Which country had the most number of medals, and how many was this? How many countries had zero medals?
+
+```{r q3e}
+# YOUR CODE GOES HERE
+total.by.nat <- 
+  tapply(rio$total, 
+         rio$nationality, 
+         sum, 
+         na.rm = TRUE)
+
+print(total.by.nat)
+
+# country with the max number of medals
+max_medals_country <- 
+  names(total.by.nat)[which.max(total.by.nat)]
+max_medals_num <- 
+  max(total.by.nat)
+
+cat("The country with the most medals:", 
+    max_medals_country, "with", 
+    max_medals_num, "medals.\n")
+
+# countries with 0 medals
+countries_with_zero_medals <- 
+  sum(total.by.nat == 0)
+
+cat("Number of countries with zero medals:", 
+    countries_with_zero_medals, "\n")
+
+
+
+```
+
+-   **3f.** Among the countries that had zero gold medals, which had the most athletes, and how many athletes was this?
+
+```{r q3f}
+# YOUR CODE GOES HERE
+# total number of gold medals in each country
+gold_by_nat <- tapply(rio$gold, rio$nationality, sum) 
+
+# countries with 0 gold medals
+zero_gold_countries <- names(gold_by_nat)[gold_by_nat == 0]
+
+# number of athletes in each nation
+athlete_count <- table(rio$nationality)
+
+# number of athletes in countries with 0 gold medals
+zero_gold_athlete_count <- athlete_count[zero_gold_countries]
+
+# create a data frame
+result_df <- data.frame(
+  Country = names(zero_gold_athlete_count),
+  Athlete_Count = as.numeric(zero_gold_athlete_count)
+)
+
+print(result_df)
+
+max_athlete_count <- max(result_df$Athlete_Count)
+countries_with_max_athletes <- result_df$Country[result_df$Athlete_Count == max_athlete_count]
+
+
+if (length(countries_with_max_athletes) == 1) {
+  print(paste("Among the countries with zero gold medals, the country with the most athletes is", 
+              countries_with_max_athletes, "with", max_athlete_count, "athletes."))
+} else {
+  countries_str <- paste(countries_with_max_athletes, collapse = ", ")
+  print(paste("Among the countries with zero gold medals, the countries with the most athletes are", 
+              countries_str, "with", max_athlete_count, "athletes each."))
+}
+
+
+```
+
+# Q4. Young and old folks
+
+-   **4a.** The variable `date_of_birth` contains strings of the date of birth of each athlete. Use the `substr()` function to extract the year of birth for each athlete, and then create a new numeric variable called `age`, equal to 2016 - (the year of birth). (Here we are ignoring days and months for simplicity.)
+
+```{r q4a}
+# YOUR CODE GOES HERE
+rio$date_of_birth <- substr(rio$date_of_birth, 1, 4)
+rio$age <- 2016 - as.numeric(rio$date_of_birth)
+print(head(rio$age, 5)) 
+```
+
+-   **4b.** Answer the same questions as in the last part, but now only among athletes who won a gold medal.
+
+```{r q4b}
+# YOUR CODE GOES HERE
+golder <- 
+  rio[rio$gold > 0, ] # athletes with gold medal
+golder$date_of_birth <- 
+  substr(golder$date_of_birth, 1, 4)
+golder$age <- 2016 - as.numeric(golder$date_of_birth)
+head(golder$age, 5)
+
+```
+
+-   **4c.** Using a single call to `tapply()`, answer: how old are the youngest and oldest athletes, for each sport?
+
+```{r q4c}
+# YOUR CODE GOES HERE
+sport_age <- 
+  tapply(rio$age,
+         rio$sport,
+         function(x)
+         c(min_age = min(x),
+           max_age = max(x)))
+sport_age
+```
+
+-   **4d.** You should see that your output from `tapply()` in the last part is a list, which is not particularly convenient. Convert this list into a matrix that has one row for each sport, and two columns that display the ages of the youngest and oldest athletes in that sport. The first 3 rows should look like this:
+
+<!-- -->
+
+                      Youngest Oldest
+    athletics               14     41
+    archery                 17     44
+    athletics               16     47
+
+You'll notice that we set the row names according to the sports, and we also set appropriate column names. Hint: `unlist()` will unravel all the values in a list; and `matrix()`, as you've seen before, can be used to create a matrix from a vector of values. After you've converted the results to a matrix, print it to the console (and make sure its first 3 rows match those displayed above).
+
+```{r q4d}
+# YOUR CODE GOES HERE
+sport_age_matrix <- 
+  do.call(rbind, sport_age)
+rownames(sport_age_matrix) <- names(sport_age)
+head(sport_age_matrix, 3)
+```
+
+-   **4e.** Determine the *names* of the youngest and oldest athletes in each sport, along with their ages (so your result should have 4 columns), without using any explicit iteration. In the case of ties, just return one relevant athlete name. (For this part, you can use another package, such as `plyr` or `dplyr` if you want to.)
+
+```{r q4chal}
+# YOUR CODE GOES HERE
+library(dplyr)
+athletes_age <- rio %>%
+  group_by(sport) %>%
+  summarise(
+    youngest_name = name[which.min(age)],   
+    youngest_age = min(age),                
+    oldest_name = name[which.max(age)],    
+    oldest_age = max(age)                 
+  )
+
+print(athletes_age)
+
+```
+
+# Q5. Sport by sport
+
+-   **5a.** Create a new data frame called `sports`, which we'll populate with information about each sporting event at the Summer Olympics. Initially, define `sports` to contain a single variable called `sport` which contains the names of the sporting events in alphabetical order. Then, add a column called `n_participants` which contains the number of participants in each sport. Use one of the apply functions to determine the number of gold medals given out for each sport, and add this as a column called `n_gold`. Using your newly created `sports` data frame, calculate the ratio of the number of gold medals to participants for each sport. Which sport has the highest ratio? Which has the lowest?
+
+```{r q5a}
+# YOUR CODE GOES HERE
+sports <- data.frame(sport = sort(unique(rio$sport))) # new df
+
+sports$n_participants <- sapply(sports$sport, function(s) sum(rio$sport == s)) 
+
+# number of gold medals given out for each sport
+sports$n_gold <- 
+  sapply(sports$sport, 
+         function(s) sum(rio$gold[which(rio$sport == s)], 
+                         na.rm = TRUE)) 
+
+sports$gold_to_participants_ratio <- 
+  sports$n_gold / sports$n_participants # define ratio
+
+head(sports) # show df
+
+max_ratio_sport <- 
+  sports[which.max(sports$gold_to_participants_ratio), ]
+min_ratio_sport <- 
+  sports[which.min(sports$gold_to_participants_ratio), ]
+
+cat("Sport with the highest gold-to-participants ratio:",
+    unlist(max_ratio_sport[1]), 
+    "with ratio of", 
+    unlist(max_ratio_sport[4]), 
+    "\n")
+
+cat("Sport with the lowest gold-to-participants ratio:",
+    unlist(min_ratio_sport[1]), 
+    "with ratio of", 
+    unlist(min_ratio_sport[4]),
+    "\n")
+```
+
+-   **5b.** Use one of the apply functions to compute the average weight of the participants in each sport, and add this as a column to `sports` called `ave_weight`. Important: there are missing weights in the data set coded as `NA`, but your column `ave_weight` should ignore these, i.e., it should be itself free of `NA` values. You will have to pass an additional argument to your apply call in order to achieve this. Hint: look at the help file for the `mean()` function; what argument can you set to ignore `NA` values? Once computed, display the average weights along with corresponding sport names, in decreasing order of average weight.
+
+```{r q5b}
+# YOUR CODE GOES HERE
+# the average weight for each sport, ignoring NAs
+sports$ave_weight <- 
+  sapply(sports$sport, 
+         function(s) mean(rio$weight[which(rio$sport == s)], 
+                          na.rm = TRUE))
+# Sort the sports by average weight in decreasing order
+sports_sorted <- 
+  sports[order(-sports$ave_weight), ]
+
+# Display
+print(sports_sorted[, c("sport", "ave_weight")])
+```
+
+-   **5c.** As in the last part, compute the average weight of athletes in each sport, but now separately for men and women. You should therefore add two new columns, called `ave_weight_men` and `ave_weight_women`, to `sports`. Once computed, display the average weights along with corresponding sports, for men and women, each list sorted in decreasing order of average weight. Are the orderings roughly similar?
+
+```{r q5c}
+# YOUR CODE GOES HERE
+
+# Calculate the average weight for men and woman in each sport 
+sports$ave_weight_men <- 
+  sapply(sports$sport, 
+         function(s) mean(rio$weight[which(rio$sport == s & rio$sex == "male")], 
+                          na.rm = TRUE))
+sports$ave_weight_women <- 
+  sapply(sports$sport, 
+         function(s) mean(rio$weight[which(rio$sport == s & rio$sex == "female")], 
+                          na.rm = TRUE))
+# Sort  
+sports_sorted_men <- 
+  sports[order(-sports$ave_weight_men), ]
+sports_sorted_women <- 
+  sports[order(-sports$ave_weight_women), ]
+
+# Display
+print(sports_sorted_men[, c("sport", "ave_weight_men")])
+print(sports_sorted_women[, c("sport", "ave_weight_women")])
+```
+
+-   **5d.** Use one of the apply functions to compute the proportion of women among participating athletes in each sport. Use these proportions to recompute the average weight (over all athletes in each sport) from the `ave_weight_men` and `average_weight_women` columns, and define a new column `ave_weight2` accordingly. Does `ave_weight2` differ from `ave_weight`? It should. Explain why. Then show how to recompute the average weight from `ave_weight_men` and `average_weight_women` in a way that exactly recreates `average_weight`.
+
+```{r q5chal}
+# YOUR CODE GOES HERE
+ 
+sports$proportions_women <- tapply(rio$sex == "female", 
+                                   rio$sport, 
+                                   sum, 
+                                   na.rm = TRUE) / sports$n_participants
+
+sports$ave_weight2 <- sports$ave_weight_men * (1 - sports$proportions_women) + 
+  sports$ave_weight_women * sports$proportions_women
+
+comparison_result <- all(sports$ave_weight_women == sports$ave_weight2) 
+print(comparison_result)
+
+#explain
+cat("the reason why they differ is because the existence of NA value while computing")
+
+
+
+```
+
+```{r}
+library(purrr)
+library(dplyr)
+library(repurrrsive)
+```
+
+# Game of Thrones data set
+
+We also install the `repurrrsive` package which has the Game of Thrones data set that we'll use for the first couple of questions. Since this may be the first time installing packages for some of you, we'll show you how. If you already have these packages installed, then you can of course skip this part. Note: *do not remove `eval=FALSE` from the above code chunk*, just run the lines below in your console. Otherwise, you will repeatedly install the package once you compile this R markdown file.
+
+```{r, eval=FALSE}
+install.packages("repurrrsive")
+```
+
+Then, we load the required packages
+
+```{r}
+library(purrr)
+library(dplyr)
+library(repurrrsive)
+```
+
+Below we inspect a data set on the 30 characters from Game of Thrones from the `repurrrsive` package. It's stored in a list called `got_chars`, which is automatically loaded into your R session when you load the `repurrrsive` package.
+
+```{r}
+class(got_chars)
+length(got_chars)
+names(got_chars[[1]])
+got_chars[[1]]$name
+got_chars[[1]]$aliases
+```
+
+# Q6. Warming up with map
+
+-   Using the map functions from the `purrr` package, extract the names of the characters in `got_chars` so that you produce a character vector of length 30. Do this four different ways: (i) using `map()`, defining a custom function on-the-fly, and casting the resulting list into an appropriate data structure; (ii) using one of the `map_***()` functions, but still defining a custom function on-the-fly; (iii) using one of the `map_***()` functions, and using one of `` `[`() `` or `` `[[`() `` functions, as well as an additional argument; (iv) using one of the `map_***()` functions, and passing a string instead of a function (relying on its ability to define an appropriate extractor accordingly).
+
+    Store each of the results in a different vector and check that they are all identical.
+
+```{r q6a}
+# YOUR CODE GOES HERE
+# First, make sure the purrr package is installed and loaded
+library(purrr)
+
+char_names_1 <- map(got_chars, function(x) x$name) %>% unlist() # map with a function
+char_names_2 <- map_chr(got_chars, function(x) x$name) # map_chr with a function
+char_names_3 <- map_chr(got_chars, `[[`, "name") # map_chr with '[['
+char_names_4 <- map_chr(got_chars, "name") # map_chr with string 'name' passed
+
+# show the results
+print(char_names_1)
+print(char_names_2)
+print(char_names_3)
+print(char_names_4)
+
+# check equality
+all(identical(char_names_1, char_names_2),
+    identical(char_names_1, char_names_3),
+    identical(char_names_1, char_names_4))
+
+```
+
+# Q7. Cultural studies
+
+-   **7a.** Using `map_dfr()`, create a data frame of dimension 30 x 5, whose columns represent, for each Game of Thrones character, their name, birth date, death date, gender, and culture. Store it as `got_df` and print the last 5 rows to the console.
+
+```{r q7a}
+# YOUR CODE GOES HERE
+got_df <- map_dfr(got_chars, 
+                  function(x){data.frame(
+                    name = x$name,
+                    birth = x$born,
+                    death = x$died,
+                    gender = x$gender,
+                    culture = x$culture)})
+
+tail(got_df, 5)
+```
+
+-   **7b.** Using `got_df`, show that you can compute whether each character is alive or not, and compare this to what is stored in `got_chars`, demonstrating that the two ways of checking whether each character is alive lead to equal results.
+
+```{r q7b}
+# YOUR CODE GOES HERE
+alive_df<- is.na(got_df$death)
+alive_chars <- sapply(got_chars, function(x){
+  is.null(x$died) || is.na(x$died)
+})
+
+equality <- all(alive_df == alive_chars)
+
+if (equality == TRUE){
+  cat("they led to equal results","\n")
+}else{
+  cat("they led to different results", "\n")
+}
+
+
+# demonstration
+cat("alive_df select the row in data frame which the death element is NA", "\n")
+cat("alive_chars apply with a function to pick the na and null elements under death attribute")
+```
+
+-   **7c.** Using `filter()`, print the subset of the rows of `got_df` that correspond to Ironborn characters. Then print the subset that correspond to female Northmen.
+
+```{r q7c}
+# YOUR CODE GOES HERE
+sub_ironborn <- got_df %>% 
+  filter(culture == "Ironborn")
+print(sub_ironborn)
+
+sub_northmen_female <- got_df %>% 
+  filter(culture == "Northmen", gender == "Female")
+print(sub_northmen_female)
+```
+
+-   **7d.** Create a matrix of dimension (number of cultures) x 2 that counts how many women and men there are in each culture appearing in `got_df`. Print the results to the console. Hint: what happens if you pass `table()` two arguments?
+
+```{r q7d}
+# YOUR CODE GOES HERE
+gender_culture <- table(got_df$culture, got_df$gender)
+print(gender_culture)
+
+```
+
+-   **7e.** Using `group_by()` and `summarize()` on `got_df`, compute how many characters in each culture have died. Which culture---aside from the unknown category represented by \"\"---has the most deaths?
+
+```{r q7e}
+# YOUR CODE GOES HERE
+got_df$alive <- ifelse(got_df$death == "", TRUE, FALSE)
+
+died_culture = summarize(group_by(got_df,culture),death_count = sum(alive == FALSE))
+died_culture
+
+
+died_culture_filtered <- filter(died_culture, culture != "") # remove
+died_culture_filtered
+
+max_death <- which.max(died_culture_filtered$death_count)
+most_death_nation <- unlist(died_culture_filtered[max_death, ][1])
+cat("the culture with the most daeth aside from unknowns:", most_death_nation)
+   
+
+
+```
+
+# Rio Olympics data set
+
+We continue to analyze the `rio` data set using the `dplyr` package.
+
+```{r}
+rio = read.csv("rio.csv")
+```
+
+# Q8. Practice with grouping and summarizing
+
+-   **8a.** Using `group_by()` and `summarize()`, compute how many athletes competed for each country in the `rio` data frame? Print the results for the first 10 countries to the console. Building off your here answer, use an additional call to `filter()` to compute which country had more than 400 athletes and how many those was. Hint: consider using `n()` from the `dplyr` package for the first part here.
+
+```{r q8a}
+# YOUR CODE GOES HERE
+print(head(rio, 5)) # check the column names
+ath_per_nation <- rio %>%
+  group_by(nationality) %>%
+  summarize(num = n())
+
+print(head(ath_per_nation, 10)) # print the first 10 countries
+
+over400 <- ath_per_nation %>% # nations with more than 400 athletes
+  filter(num > 400)
+
+print(over400)
+```
+
+-   **8b.** Using `group_by()`, `summarize()`, and `filter()`, compute which country had more than 100 medals and many those were.
+
+```{r q8b}
+# YOUR CODE GOES HERE
+medal <- rio %>%
+  group_by(nationality) %>%
+  summarize(total = sum(gold + silver + bronze)) %>%
+  filter(total > 100)
+
+print(medal)
+```
+
+-   **8c.** Using `group_by()`, `summarize()`, and `filter()`, compute which country---among those with zero total medals---had the most number of athletes. Hint: you will need to modify your `summarize()` command to compute the number of athletes; and you might need two calls to `filter()`.
+
+```{r q8c}
+# YOUR CODE GOES HERE
+nation <- rio %>%
+  group_by(nationality) %>%
+  summarize(total = sum(gold + silver + bronze),
+            num = n()) %>%
+  filter(total == 0) %>% # nations with 0 medals
+  filter(num == max(num)) # the one has the largest number of athletes
+
+#print the results
+print(nation)
+  
+```
+
+-   **8d.** Using---yes, you guessed it---`group_by()`, `summarize()`, and `filter()`, compute the average weight of athletes in each sport, separately for men and women, and report the two sport with the highest average weights (one for each of men and women). Hint: `group_by()` can accept more than one grouping variable. Also, consider using `na.rm=TRUE` as an additional argument to certain arithmetic summary functions so that they will not be thrown off by `NA` or `NaN` values.
+
+```{r q8d}
+# YOUR CODE GOES HERE
+ave_weight_gender_sport <- rio %>%
+  group_by(sex, sport) %>%
+  summarize(av_weight = mean(weight, na.rm = TRUE)) %>%
+  filter(!is.nan(av_weight))
+
+male_max_av_weight <- ave_weight_gender_sport %>%
+  filter(sex == 'male') %>%
+  filter(av_weight == max(av_weight))
+
+female_max_av_weight <- ave_weight_gender_sport %>%
+  filter(sex == 'female') %>%
+  filter(av_weight == max(av_weight))
+
+
+print(male_max_av_weight)
+print(female_max_av_weight)
+```
+
+# Fastest 100m sprint times
+
+Below, we read two data sets of the 1000 fastest times ever recorded for the 100m sprint, in men's and women's track. We scraped this data from <http://www.alltime-athletics.com/m_100ok.htm> and <http://www.alltime-athletics.com/w_100ok.htm>, in early September 2021.
+
+```{r}
+sprint.m.df = read.table(
+  file="sprint.m.txt", 
+  sep="\t", quote="", header=TRUE)
+sprint.w.df = read.table(
+  file="sprint.w.txt", 
+  sep="\t", quote="", header=TRUE)
+```
+
+# Q9. More practice with data frame computations
+
+-   **9a.** Confirm that both `sprint.m.df` and `sprint.w.df` are data frames. Delete the `Rank` column from each data frame, then display the first and last 5 rows of each.
+
+```{r q9a}
+# YOUR CODE GOES HERE
+is_m_df <- is.data.frame(sprint.m.df)
+is_w_df <- is.data.frame(sprint.w.df)
+cat("sprint.m.df is a data frame: ", ifelse(is_m_df, "yes", "no"), "\n")
+cat("sprint.w.df is a data frame: ", ifelse(is_w_df, "yes", "no"), "\n")
+
+# delete column Rank 
+sprint.m.df <- subset(sprint.m.df, select = -Rank)
+sprint.w.df <- subset(sprint.w.df, select = -Rank)
+
+# show the first and last 5 rows of sprint.m.df 
+print(head(sprint.m.df, 5))
+print(tail(sprint.m.df, 5))
+
+# show the first and last 5 rows of sprint.w.df  
+print(head(sprint.w.df, 5))
+print(tail(sprint.w.df, 5))
+
+```
+
+-   **9b.** Recompute the ranks for the men's data set from the `Time` column and add them back as a `Rank` column to `sprint.m.df`. Do the same for the women's data set. After adding back the rank columns, print out the first 10 rows of each data frame, but only the `Time`, `Name`, `Date`, and `Rank` columns. Hint: consider using `rank()`.
+
+```{r q9b}
+# YOUR CODE GOES HERE
+
+# recalculate rank and add
+sprint.m.df$Rank <- rank(sprint.m.df$Time, ties.method = "min") 
+sprint.w.df$Rank <- rank(sprint.w.df$Time, ties.method = "min")
+cat("First 10 rows of Time, Name, Date, and Rank columns in the men's dataset:\n")
+print(sprint.m.df[1:10, c("Time", "Name", "Date", "Rank")])
+cat("First 10 rows of Time, Name, Date, and Rank columns in the women's dataset:\n")
+print(sprint.w.df[1:10, c("Time", "Name", "Date", "Rank")])
+```
+
+-   **9c.** Using base R functions, compute, for each country, the number of sprint times from this country that appear in the men's data set. Call the result `sprint.m.counts`. Do the same for the women's data set, and call the result `sprint.w.counts`. What are the 5 most represented countries, for the men, and for the women?
+
+```{r q9c}
+# YOUR CODE GOES HERE
+sprint.m.counts <- table(sprint.m.df$Country)
+sprint.w.counts <- table(sprint.w.df$Country)
+
+# Find the 5 most represented countries
+top5_men <- names(sort(sprint.m.counts, decreasing = TRUE)[1:5])
+top5_women <- names(sort(sprint.w.counts, decreasing = TRUE)[1:5])
+
+# Print the results
+cat("The 5 most represented countries in the men's dataset: ", top5_men, "\n")
+cat("The 5 most represented countries in the women's dataset: ", top5_women, "\n")
+```
+
+-   **9d.** Repeat the same calculations as in last part but using `dplyr` functions, and print out again the 5 most represented countries for men and women. (No need to save new variables.) Hint: consider using `arrange()` from the `dplyr` library.
+
+```{r q9d}
+# YOUR CODE GOES HERE
+library(dplyr)
+# Men's dataset
+top5_men_dplyr <- sprint.m.df %>%
+  group_by(Country) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(5) %>%
+  pull(Country)
+
+# Women's dataset
+top5_women_dplyr <- sprint.w.df %>%
+  group_by(Country) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  head(5) %>%
+  pull(Country)
+
+# Print the results
+cat("The 5 most represented countries in the men's dataset: ", top5_men_dplyr, "\n")
+cat("The 5 most represented countries in the women's dataset: ", top5_women_dplyr, "\n")
+```
+
+-   **9e.** Are there any countries that are represented by women but not by men, and if so, what are they? Vice versa, represented by men and not women? Hint: consider using the `%in%` operator.
+
+```{r q9e}
+# YOUR CODE GOES HERE)
+# Get the unique countries in men's and women's datasets
+men_countries <- unique(sprint.m.df$Country)
+women_countries <- unique(sprint.w.df$Country)
+# represented by women
+countries_women_not_men <- women_countries[!women_countries %in% men_countries]
+#represented by men
+countries_men_not_women <- men_countries[!men_countries %in% women_countries]
+
+# Print the results
+if (length(countries_women_not_men) > 0) {
+  cat("Countries represented by women but not by men: ", countries_women_not_men, "\n")
+} else {
+  cat("There are no countries represented by women but not by men.\n")
+}
+
+if (length(countries_men_not_women) > 0) {
+  cat("Countries represented by men but not by women: ", countries_men_not_women, "\n")
+} else {
+  cat("There are no countries represented by men but not by women.\n")
+}
+```
+
+# Q10. Practice with grouping
+
+-   **10a.** Using `dplyr` functions, compute, for each country, the fastest time among athletes who come from that country. Do this for each of the men's and women's data sets, and display the first 10 rows of the result.
+
+```{r q10a}
+# YOUR CODE GOES HERE
+library(dplyr)
+men_fastest_times <- sprint.m.df %>%
+  group_by(Country) %>%
+  summarize(Fastest_Time = min(Time, na.rm = TRUE)) %>%
+  head(10)
+women_fastest_times <- sprint.w.df %>%
+  group_by(Country) %>%
+  summarize(Fastest_Time = min(Time, na.rm = TRUE)) %>%
+  head(10)
+print(men_fastest_times)
+print(women_fastest_times)
+
+```
+
+-   **10b.** With the most minor modification to your code possible, do the same computations as in the last part, but now display the first 10 results ordered by increasing time. Hint: recall `arrange()`.
+
+```{r q10b}
+# YOUR CODE GOES HERE
+library(dplyr)
+men_fastest_times <- sprint.m.df %>%
+  group_by(Country) %>%
+  summarize(Fastest_Time = min(Time, na.rm = TRUE)) %>%
+  arrange(Fastest_Time) %>%
+  head(10)
+women_fastest_times <- sprint.w.df %>%
+  group_by(Country) %>%
+  summarize(Fastest_Time = min(Time, na.rm = TRUE)) %>%
+  arrange(Fastest_Time) %>%
+  head(10)
+print(men_fastest_times)
+print(women_fastest_times)
+```
+
+-   **10c.** Rewrite your solution in the last part using base R. Hint: `tapply()` gives probably the easiest route here. Note: your code here shouldn't be too much more complicated than your code in the last part.
+
+```{r q10c}
+# YOUR CODE GOES HERE
+men_grouped <- tapply(sprint.m.df$Time, sprint.m.df$Country, min, na.rm = TRUE)
+men_sorted <- sort(men_grouped)
+men_top10 <- men_sorted[1:min(10, length(men_sorted))]
+men_result <- data.frame(Country = names(men_top10), Fastest_Time = men_top10)
+print(men_result)
+
+women_grouped <- tapply(sprint.w.df$Time, sprint.w.df$Country, min, na.rm = TRUE)
+women_sorted <- sort(women_grouped)
+women_top10 <- women_sorted[1:min(10, length(women_sorted))]
+women_result <- data.frame(Country = names(women_top10), Fastest_Time = women_top10)
+print(women_result)
+```
+
+-   **10d.** Using `dplyr` functions, compute, for each country, the quadruple: name, city, country, and time, corresponding to the athlete with the fastest time among athletes from that country. Do this for each of the men's and women's data sets, and display the first 10 rows of the result, ordered by increasing time. If there are ties, then show all the results that correspond to the fastest time. Hint: consider using `select()` from the `dplyr` library.
+
+```{r q10d}
+# YOUR CODE GOES HERE
+library(dplyr)
+men_fastest_athletes <- sprint.m.df %>%
+  group_by(Country) %>%
+  filter(Time == min(Time, na.rm = TRUE)) %>%
+  select(Name, City, Country, Time) %>%
+  arrange(Time) %>%
+  head(10)
+women_fastest_athletes <- sprint.w.df %>%
+  group_by(Country) %>%
+  filter(Time == min(Time, na.rm = TRUE)) %>%
+  select(Name, City, Country, Time) %>%
+  arrange(Time) %>%
+  head(10)
+print(men_fastest_athletes)
+print(women_fastest_athletes)
+```
+
+-   **10e.** Rewrite your solution in the last part using base R. Hint: there are various routes to go; one strategy is to use `split()`, followed by `lapply()` with a custom function call, and then `rbind()` to get things in a data frame form. Note: your code here will probably be more complicated, or at least less intuitive, than your code in the last part.
+
+```{r q10e}
+# YOUR CODE GOES HERE
+# self-defined function used for find the fastest athletes
+find_fastest_athlete <- function(country_data) {
+  min_time <- min(country_data$Time, na.rm = TRUE)
+  return(country_data[country_data$Time == min_time, c("Name", "City", "Country", "Time")])
+}
+
+# men' data set
+men_split <- split(sprint.m.df, sprint.m.df$Country)
+men_fastest <- lapply(men_split, find_fastest_athlete)
+men_fastest_df <- do.call(rbind, men_fastest)
+men_fastest_df <- men_fastest_df[order(men_fastest_df$Time), ]
+men_fastest_10 <- men_fastest_df[1:min(10, nrow(men_fastest_df)), ]
+
+# women' data set
+women_split <- split(sprint.w.df, sprint.w.df$Country)
+women_fastest <- lapply(women_split, find_fastest_athlete)
+women_fastest_df <- do.call(rbind, women_fastest)
+women_fastest_df <- women_fastest_df[order(women_fastest_df$Time), ]
+women_fastest_10 <- women_fastest_df[1:min(10, nrow(women_fastest_df)), ]
+
+print(men_fastest_10)
+print(women_fastest_10)
+```
