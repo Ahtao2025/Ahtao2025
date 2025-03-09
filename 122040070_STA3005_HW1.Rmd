@@ -1,0 +1,810 @@
+---
+title: 'Assignment 1: Data and Index'
+author: "STA3005 Statistical Computing"
+date: 'Due date: Feb 14, 23:59'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE, autodep=TRUE, cache.comments=TRUE)
+```
+
+- Name:  **Yuntao Xue**
+- Student ID:  **122040070**
+- Collaborated with: **Li Zichen**
+
+Please submit 2 files to blackboard: your code and your report(PDF or HTML), and rename them as this formula: __Student ID\_Name\_A1__. (e.g. 223040235_JiashengLi_A1.pdf and 223040235_JiashengLi_A1.Rmd)
+
+You can collaborate with your classmates, but you must identify their names above.
+
+```{r}
+## For reproducibility --- don't change this!
+set.seed(01182023)
+```
+
+**Agenda**: manipulating data objects; using built-in functions, doing numerical calculations, and basic plots; reinforcing core probabilistic ideas.
+
+The binomial distribution
+===
+
+The binomial distribution $\mathrm{Bin}(m,p)$ is defined by the number of successes in $m$ independent trials, each have probability $p$ of success. Think of flipping a coin $m$ times, where the coin is weighted to have probability $p$ of landing on heads.
+
+The R function `rbinom()` generates random variables with a binomial distribution. E.g., 
+
+```{r, eval=FALSE}
+rbinom(n=20, size=10, prob=0.5)
+```
+
+produces 20 observations from $\mathrm{Bin}(10,0.5)$.
+
+Q1. Some simple manipulations
+===
+
+- **1a.** Generate 500 random values from the $\mathrm{Bin}(15,0.5)$ distribution, and store them in a vector called `bin.draws.0.5`. Extract and display the first 20 elements. Extract and display all but the first 480 elements. 
+
+```{r q1a}
+# YOUR CODE GOES HERE
+bin.draws.0.5 <- rbinom(500, size = 15, prob = 0.5) # randomly generate 500 values from binomial(15, 0.5)
+head(bin.draws.0.5, 20) # display first 20 numbers
+bin.draws.0.5[481:500] # extract and display all but the first 480 elements
+```
+
+- **1b.** Add the first element of `bin.draws.0.5` to the fifth. Compare the second element to the tenth, which is larger? A bit more tricky: print the indices of the elements of `bin.draws.0.5` that are equal to 3. How many such elements are there? Theoretically, how many such elements would you expect there to be? Hint: it would be helpful to look at the help file for the `rbinom()` function.
+
+```{r q1b}
+# YOUR CODE GOES HERE
+# Add the first element to the fifth element
+sum_first_fifth <- bin.draws.0.5[1] + bin.draws.0.5[5]
+cat(sum_first_fifth)
+
+# Compare the second element to the tenth element
+larger_value <- ifelse(bin.draws.0.5[2] > bin.draws.0.5[10], "Second is larger", 
+                       ifelse(bin.draws.0.5[2] < bin.draws.0.5[10], "Tenth is larger", "They are equal"))
+cat(larger_value)
+
+# Find the indices of the elements equal to 3
+indices_equal_3 <- which(bin.draws.0.5 == 3)
+print(indices_equal_3)
+
+# Count how many such elements there are
+count_equal_3 <- length(indices_equal_3)
+cat(count_equal_3)
+
+# Theoretical probability of getting exactly 3 successes
+prob_3 <- dbinom(3, size = 15, prob = 0.5)
+# The expected number of 3s in 500 draws
+expected_count_3 <- prob_3 * 500
+cat(expected_count_3)
+```
+
+- **1c.** Find the mean and standard deviation of `bin.draws.0.5`. Is the mean close what you'd expect? The standard deviation?
+
+```{r q1c}
+# YOUR CODE GOES HERE
+mean_bin <- mean(bin.draws.0.5)
+cat("mean:", mean_bin, "expected mean: 7.5", "\n")
+
+sd_bin <- sd(bin.draws.0.5)
+cat("standard deviation:", sd_bin, "\n")
+
+# therotical
+m <- 15 * 0.5 # mean
+cat("therotical mean:", m, "\n")
+s = sqrt(15 * 0.5 *(1-0.5))
+cat("therotical sd:", s, "\n")
+
+print("the mean and standard deviation are all close to what I expected since they are close to the theorotical values")
+```
+
+- **1d.** Call `summary()` on `bin.draws.0.5` and describe the result.
+
+```{r q1d}
+# YOUR CODE GOES HERE
+# Get a summary of bin.draws.0.5
+summary(bin.draws.0.5)
+
+cat("minimum and maximum value is 2 and 13 erspectively")
+cat("25th percentile is 6, 75th percentile is 9")
+cat("the median is 7 while the mean is 7.544")
+```
+
+- **1e.** Find the data type of the elements in `bin.draws.0.5` using `typeof()`. Then convert `bin.draws.0.5` to a vector of characters, storing the result as `bin.draws.0.5.char`, and use `typeof()` again to verify that you've done the conversion correctly. Call `summary()` on `bin.draws.0.5.char`. Is the result formatted differently from what you saw above? Why?
+
+```{r q1e}
+# YOUR CODE GOES HERE
+typeof(bin.draws.0.5)
+# convert bin.draws.0.5 to a charater vector
+bin.draws.0.5.char <- as.character(bin.draws.0.5)
+typeof(bin.draws.0.5.char) # verify
+```
+
+Q2. Some simple plots
+===
+
+- **2a.** The function `plot()` is a generic function in R for the visual display of data. The function `hist()` specifically produces a histogram display. Use `hist()` to produce a histogram of your random draws from the binomial distribution, stored in `bin.draws.0.5`. 
+
+```{r q2a}
+# YOUR CODE GOES HERE
+hist(bin.draws.0.5)
+```
+
+- **2b.** Call `tabulate()` on `bin.draws.0.5`. What is being shown? Does it roughly match the histogram you produced in the last question?
+
+```{r q2b}
+# YOUR CODE GOES HERE
+tabulate(bin.draws.0.5)
+## it is showing the value of each column in the histogram
+```
+
+- **2c.** Call `plot()` on `bin.draws.0.5` to display your random values from the binomial distribution. Can you interpret what the `plot()` function is doing here?
+
+```{r q2c}
+# YOUR CODE GOES HERE
+plot(bin.draws.0.5)
+cat("This scatter plot displays random values drawn from a binomial distribution, reflecting the variation in the number of successes in each trial with a success probability of 0.5")
+```
+
+- **2d.** Call `plot()` with two arguments, the first being `1:500`, and the second being `bin.draws.0.5`. This creates a scatterplot of `bin.draws.0.5` (on the y-axis) versus the indices 1 through 500 (on the x-axis). Does this match your plot from the last question?
+
+```{r q2d}
+# YOUR CODE GOES HERE
+plot(1:500, bin.draws.0.5)
+cat("this indeed match my plot from the last question")
+
+```
+
+Q3. More binomials, more plots
+===
+
+- **3a.** Generate 500 binomials again, composed of 15 trials each, but change the probability of success to: 0.2, 0.3, 0.4, 0.6, 0.7, and 0.8, storing the results in vectors called `bin.draws.0.2`, `bin.draws.0.3`, `bin.draws.0.4.`, `bin.draws.0.6`, `bin.draws.0.7` and  `bin.draws.0.8`. For each, compute the mean and standard deviation.
+
+```{r q3a}
+# YOUR CODE GOES HERE
+# Set number of simulations and trials
+n_simulations <- 500
+n_trials <- 15
+
+# Generate binomial distributions from each probability
+bin.draws.0.2 <- rbinom(n_simulations, n_trials, 0.2)
+bin.draws.0.3 <- rbinom(n_simulations, n_trials, 0.3)
+bin.draws.0.4 <- rbinom(n_simulations, n_trials, 0.4)
+bin.draws.0.6 <- rbinom(n_simulations, n_trials, 0.6)
+bin.draws.0.7 <- rbinom(n_simulations, n_trials, 0.7)
+bin.draws.0.8 <- rbinom(n_simulations, n_trials, 0.8)
+
+# Compute the mean and standard deviation for each set of binomial draws
+mean_0.2 <- mean(bin.draws.0.2)
+sd_0.2 <- sd(bin.draws.0.2)
+
+mean_0.3 <- mean(bin.draws.0.3)
+sd_0.3 <- sd(bin.draws.0.3)
+
+mean_0.4 <- mean(bin.draws.0.4)
+sd_0.4 <- sd(bin.draws.0.4)
+
+mean_0.5 <- mean(bin.draws.0.5)
+sd_0.5 <- sd(bin.draws.0.5)
+
+mean_0.6 <- mean(bin.draws.0.6)
+sd_0.6 <- sd(bin.draws.0.6)
+
+mean_0.7 <- mean(bin.draws.0.7)
+sd_0.7 <- sd(bin.draws.0.7)
+
+mean_0.8 <- mean(bin.draws.0.8)
+sd_0.8 <- sd(bin.draws.0.8)
+
+# Print results
+cat("Probability 0.2 - Mean:", mean_0.2, "SD:", sd_0.2, "\n")
+cat("Probability 0.3 - Mean:", mean_0.3, "SD:", sd_0.3, "\n")
+cat("Probability 0.4 - Mean:", mean_0.4, "SD:", sd_0.4, "\n")
+cat("Probability 0.5 - Mean:", mean_0.5, "SD:", sd_0.5, "\n")
+cat("Probability 0.6 - Mean:", mean_0.6, "SD:", sd_0.6, "\n")
+cat("Probability 0.7 - Mean:", mean_0.7, "SD:", sd_0.7, "\n")
+cat("Probability 0.8 - Mean:", mean_0.8, "SD:", sd_0.8, "\n")
+```
+
+- **3b.** We'd like to compare the properties of our vectors. Create a vector of length 7, whose entries are the means of the 7 vectors we've created, in order according to the success probabilities of their underlying binomial distributions (0.2 through 0.8).
+
+```{r q3b}
+# YOUR CODE GOES HERE
+means_vector <- c(mean_0.2, mean_0.3, mean_0.4, mean_0.5, mean_0.6, mean_0.7, mean_0.8)
+cat(means_vector)
+```
+    
+- **3c.** Using the vectors from the last part, create the following scatter plots. Explain in words, for each, what's going on.
+    * The 7 means versus the 7 probabilities used to generate the draws.
+    * The standard deviations versus the probabilities.
+    * The standard deviations versus the means.
+
+For each plot, add a curve that corresponds to the relationships you'd expect to see in the theoretical population (i.e., with an infinite amount of draws, rather than just 500 draws).
+    
+```{r q3c}
+# YOUR CODE GOES HERE
+probabilities <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8) # define the success probabilities
+n_trials <- 15 # define the trail
+
+theoretical_means <- n_trials * probabilities # np
+theoretical_sds <- sqrt(n_trials * probabilities * (1 - probabilities)) # sqrt(np(1-p))
+
+sds_vector <- c(sd_0.2, sd_0.3, sd_0.4, sd_0.5, sd_0.6, sd_0.7, sd_0.8) # sd vector
+
+# Plot 1: Scatter plot of means vs probabilities
+plot(probabilities, means_vector, main = "Means vs Probabilities", 
+     xlab = "Probability", ylab = "Mean", pch = 16, col = "blue")
+lines(probabilities, means_vector, col = "blue")
+lines(probabilities, theoretical_means, col = "red", lty = 2)
+
+# Plot 2: Scatter plot of standard deviations vs probabilities
+plot(probabilities, sds_vector, main = "Standard Deviations vs Probabilities", 
+     xlab = "Probability", ylab = "Standard Deviation", pch = 16, col = "green")
+lines(probabilities, sds_vector, col = "green")   
+lines(probabilities, theoretical_sds, col = "red", lty = 2) 
+
+# Plot 3: Scatter plot of standard deviations vs means
+plot(means_vector, sds_vector, main = "Standard Deviations vs Means", 
+     xlab = "Mean", ylab = "Standard Deviation", pch = 16, col = "purple")
+lines(means_vector, sds_vector, col = "purple") 
+```
+
+Q4. Working with matrices
+===
+
+- **4a.** Create a matrix of dimension 500 x 7, called `bin.matrix`, whose columns contain the 7 vectors we've created, in order of the success probabilities of their underlying binomial distributions (0.2 through 0.8). Hint: use `cbind()`. 
+
+```{r q4a}
+# YOUR CODE GOES HERE
+# Using cbind() to combine the 7 vectors into a matrix
+bin.matrix <- cbind(bin.draws.0.2, bin.draws.0.3, bin.draws.0.4, bin.draws.0.5, bin.draws.0.6, bin.draws.0.7, bin.draws.0.8)
+
+```
+
+- **4b.** Print the first five rows of `bin.matrix`. Print the element in the 166th row and 5th column. Compute the largest element in first column. Compute the largest element in all but the first column.
+
+```{r q4b}
+# YOUR CODE GOES HERE
+head(bin.matrix, 5)
+print(bin.matrix[166, 5]) # print the element 166th column and 5th row
+max(bin.matrix[, 1]) # max value in the 1st column
+max(bin.matrix[, -1]) # largest element in all but the first column
+
+```
+
+- **4c.** Calculate the column means of `bin.matrix` by using just a single function call.
+
+```{r q4c}
+# YOUR CODE GOES HERE
+col_means = colMeans(bin.matrix)
+print(col_means)
+```
+
+- **4d.** Compare the means you computed in the last question to those you computed in Q3b, in two ways. First, using `==`, and second, using `identical()`. What do the two ways report? Are the results compatible? Explain.
+
+```{r q4d}
+# YOUR CODE GOES HERE
+comparison <- col_means == means_vector
+print(comparison)
+comparison_2 <- identical(col_means, means_vector)
+print(comparison_2)
+
+print("the results were not compatible, this is due to the data type is float, '==' is approximation while identical() takes more consideration in accuracy of float number, thus the results were nt compatible")
+```
+
+- **4e.** Take the transpose of `bin.matrix` and then take row means. Are these the same as what you just computed? Should they be?
+
+```{r q4e}
+# YOUR CODE GOES HERE
+t_bin <- t(bin.matrix)
+t_bin_rowmean <- rowMeans(t_bin)
+print(t_bin_rowmean)
+
+print("yes they are the same and they should be")
+```
+
+Q5. Warm up is over, let's go big
+===
+
+- **5a.** R's capacity for data storage and computation is very large compared to what was available 10 years ago. Generate 5 million numbers from $\mathrm{Bin}(1 \times 10^6, 0.5)$ distribution and store them in a vector called `big.bin.draws`. Calculate the mean and standard deviation of this vector.
+
+```{r q5a}
+# YOUR CODE GOES HERE
+big.bin.draws <- rbinom(5000000, size = 1000000, prob = 0.5)
+mean_bigdraw <- mean(big.bin.draws)
+sd_bigdraw <- sd(big.bin.draws)
+print(c(mean_bigdraw, sd_bigdraw))
+```
+
+- **5b.** Create a new vector, called `big.bin.draws.standardized`, which is given by taking `big.bin.draws`, subtracting off its mean, and then dividing by its standard deviation. Calculate the mean and standard deviation of `big.bin.draws.standardized`. (These should be 0 and 1, respectively, or very close to it; if not, you've made a mistake somewhere).
+
+```{r q5b}
+# YOUR CODE GOES HERE
+
+# Create the standardized vector
+big.bin.draws.standardized <- (big.bin.draws - mean_bigdraw) / sd_bigdraw
+
+# Calculate the mean and standard deviation of the standardized vector
+mean_standardized <- mean(big.bin.draws.standardized)
+sd_standardized <- sd(big.bin.draws.standardized)
+
+# Print the results
+print(paste("Mean of standardized vector:", mean_standardized))
+print(paste("Standard deviation of standardized vector:", sd_standardized))
+```
+    
+- **5c.** Calculate the proportion of times that an element of `big.bin.draws.standardized` exceeds 1.644854 (95th percentile of a standard normal distribution). Is this close to 0.05? 
+
+```{r q5c}
+# YOUR CODE GOES HERE
+prop <- mean(big.bin.draws.standardized > 1.644854)
+print(paste('the proportion is:',
+      prop))
+
+cat("it is close to 0.05")
+```
+
+Q6. Going big with lists
+===
+
+- **6a.** Convert `big.bin.draws` into a list using `as.list()` and save the result as `big.bin.draws.list`. Check that you indeed have a list by calling `class()` on the result. Check also that your list has the right length, and that its 1159th element is equal to that of `big.bin.draws`.
+
+```{r q6a}
+# YOUR CODE GOES HERE
+big.bin.draws.list <- as.list(big.bin.draws)
+class(big.bin.draws.list)
+list_length <- length(big.bin.draws.list)
+vector_length <- length(big.bin.draws)
+same_length <- list_length == vector_length
+equal <- big.bin.draws[1159] == big.bin.draws.list[[1159]]
+if(same_length == TRUE){print('the list length is right!')}else{print('the list length is not right!!')}
+if(equal == TRUE){print('the 1159th element of list is equal to that of big.bin.draws!')}else{print('the elements are not the same!')}
+```
+
+- **6b.** Run the code below, to standardize the binomial draws in the list `big.bin.draws.list`. Note that `lapply()` applies the function supplied in the second argument to every element of the list supplied in the first argument, and then returns a list of the function outputs. (We'll learn much more about the `apply()` family of functions later in the course.) Did this `lapply()` command take longer to evaluate than the code you wrote in Q5b? (It should have; otherwise your previous code could have been improved, so go back and improve it.) Why do you think this is the case?
+
+```{r, eval=FALSE}
+big.bin.draws.mean = mean(big.bin.draws)
+big.bin.draws.sd = sd(big.bin.draws)
+standardize = function(x) {
+  return((x - big.bin.draws.mean) / big.bin.draws.sd)
+}
+big.bin.draws.list.standardized.slow = lapply(big.bin.draws.list, standardize)
+
+print("it indeed took longer to evaluate. This version runs slowly because each call to standardize.slow recalculates the mean and standard deviation of big.bin.draws for every element processed by lapply(), resulting in redundant computations that significantly reduce efficiency.")
+```
+
+- **6c.** Run the code below, which again standardizes the binomial draws in the list `big.bin.draws.list`, using `lapply()`. Why is it so much slower than the code in the last question? (You may stop evaluation if it is taking too long!) Think about what is happening each time the function is called.
+
+```{r, eval=FALSE}
+standardize.slow = function(x) {
+  return((x - mean(big.bin.draws)) / sd(big.bin.draws))
+}
+big.bin.draws.list.standardized.slow = lapply(big.bin.draws.list, standardize.slow)
+
+print("the function standardize.slow is inefficient because it recalculates the mean and standard deviation for every single element in the list instead of doing it once before applying the function.")
+```
+
+- **6d.** Lastly, let's look at memory useage. The command `object.size(x)` returns the number of bytes used to store the object `x` in your current R session. Find the number of bytes used to store `big.bin.draws` and `big.bin.draws.list`. How many megabytes (MB) is this, for each object? Which object requires more memory, and why do you think this is the case? Remind yourself: why are lists special compared to vectors, and is this property important for the current purpose (storing the binomial draws)?
+
+```{r q6d}
+# YOUR CODE GOES HERE
+# Memory usage of big.bin.draws (assuming it's a vector)
+size_big_bin_draws <- object.size(big.bin.draws)
+
+# Memory usage of big.bin.draws.list (a list)
+size_big_bin_draws_list <- object.size(big.bin.draws.list)
+
+# Convert bytes to megabytes (1 MB = 1024 * 1024 bytes)
+size_big_bin_draws_MB <- size_big_bin_draws / (1024 * 1024)
+size_big_bin_draws_list_MB <- size_big_bin_draws_list / (1024 * 1024)
+
+# Print the results
+cat("Memory usage of big.bin.draws:", size_big_bin_draws_MB, "MB\n")
+cat("Memory usage of big.bin.draws.list:", size_big_bin_draws_list_MB, "MB\n")
+```
+
+Q7. More R basics
+===
+
+- **7a.** Let's start easy by working through some R basics, to continue to brush up on them. Define a variable `x.vec` to contain the integers 1 through 100. Check that it has length 100. Report the data type being stored in `x.vec`. Add up the numbers in `x.vec`, by calling a built-in R function. How many arithmetic operations did this take? Show how Gauss would have done this same calculation as a 7 year old, using just 3 arithmetic operations.
+
+```{r q7a}
+# YOUR CODE GOES HERE
+x.vec <- 1:100 # create a variable to contain integers from 1 to 100
+if(length(x.vec) == 100){print('the length is 100')}else{print('the length is not 100')} # check the length
+typeof(x.vec) # report the data type
+sum(x.vec) # sum up all numbers in the variable, it performs 99 additions so 99 arithmetic operations
+
+# Gauss
+n <- 100
+gauss.sum <- n * (n + 1) / 2
+print(gauss.sum)  # This prints 5050
+```
+
+- **7b.** Convert `x.vec` into a matrix with 20 rows and 5 columns, and store this as `x.mat`. Here `x.mat` should be filled out in the default order (column major order). Check the dimensions of `x.mat`, and the data type as well. Compute the sums of each of the 5 columns of `x.mat`, by calling a built-in R function. Check (using a comparison operator) that the sum of column sums of `x.mat` equals the sum of `x.vec`.
+
+```{r q7b}
+# YOUR CODE GOES HERE
+x.mat <- matrix(x.vec, nrow = 20, ncol = 5)
+print(dim(x.mat)) # check he dimension
+print(typeof(x.mat)) # report the data type
+column_sums <- colSums(x.mat)
+print(column_sums) # print the sums of each of the 5 columns of x.mat
+
+total_from_columns <- sum(column_sums)
+total_from_vector <- sum(x.vec)
+
+# Compare the two totals:
+check_equal <- total_from_columns == total_from_vector
+if(check_equal){print('they are equal')}else{print('they are not equal')}  # check the equality
+```
+
+- **7c.** Extract and display rows 1, 15, and 17 of `x.mat`, with a single line of code. Answer the following questions, each with a single line of code: how many elements in row 2 of `x.mat` are larger than 40? How many elements in column 3 are in between 45 and 50? How many elements in column 5 are odd? Hint: take advantage of the `sum()` function applied to Boolean vectors.
+
+```{r q7c}
+# YOUR CODE GOES HERE
+
+# extract and display each row
+x.mat[1, ]
+x.mat[15, ]
+x.mat[17, ]
+
+sum(x.mat[2, ] > 40) # number of elements larger than 40 in row 2
+sum(x.mat[, 3] > 45 & x.mat[, 3] < 50) # number of elements in [45, 50] in column 3
+sum(x.mat[, 5] %% 2 == 1) # number of odd elements in column 5
+```
+
+- **7d.** Using Boolean indexing, modify `x.vec` so that every even number in this vector is incremented by 10, and every odd number is left alone. This should require just a single line of code. Print out the result to the console. **Challenge**: show that `ifelse()` can be used to do the same thing, again using just a single line of code.
+
+```{r q7d}
+# YOUR CODE GOES HERE
+x.vec[x.vec %% 2 == 0] <- x.vec[x.vec %% 2 == 0] + 10 # each even number is incremented by 10
+print(x.vec)
+
+# achieved by ifelse()
+x.vec <- ifelse(x.vec %% 2 == 0, x.vec + 10, x.vec)
+print(x.vec)
+```
+
+- **7e.** Show that `ifelse()` can be used to do the same thing in __7d__, again using just a single line of code.
+
+```{r q7e}
+# YOUR CODE GOES HERE
+x.vec <- ifelse(x.vec %% 2 == 0, x.vec + 10, x.vec)
+print(x.vec)
+```
+
+- **7f.** Consider the list `x.list` created below. Complete the following tasks, each with a single line of code: extract all but the second element of `x.list`---seeking here a list as the final answer. Extract the first and third elements of `x.list`, then extract the second element of the resulting list---seeking here a vector as the final answer. Extract the second element of `x.list` as a vector, and then extract the first 10 elements of this vector---seeking here a vector as the final answer. Note: pay close attention to what is asked and use either single brackets `[ ]` or double brackets `[[ ]]` as appropriate.
+
+```{r q7f}
+x.list = list(rnorm(6), letters, sample(c(TRUE,FALSE),size=4,replace=TRUE))
+# YOUR CODE GOES HERE
+x.list[-2] # return a list without the second element
+x.list[c(1, 3)][[2]] # extract the first and third elements of x.list, then extract the second element of the resulting list as a vector
+x.list[[2]][1:10] # extract the second element of x.list as a vector then extract the first 10 elements of this vector
+
+
+
+```
+
+Prostate cancer data set
+===
+
+We're going to look at a data set on 97 men who have prostate cancer (from the book [The Elements of Statistical Learning](http://statweb.stanford.edu/~hastie/ElemStatLearn/)). There are 9 variables measured on these 97 men:
+
+1. `lpsa`: log PSA score
+2. `lcavol`: log cancer volume
+3. `lweight`: log cancer weight
+4. `age`: age of patient
+5. `lbph`: log of the amount of benign prostatic hyperplasia
+6. `svi`: seminal vesicle invasion
+7. `lcp`: log of capsular penetration
+8. `gleason`: Gleason score 
+9. ` pgg45`: percent of Gleason scores 4 or 5 
+
+To load this prostate cancer data set into your R session, and store it as a matrix `pros.dat`:
+
+```{r}
+pros.dat =
+  as.matrix(read.table("pros.dat"))
+```
+
+Q8. Basic indexing and calculations
+===
+
+- **8a.** What are the dimensions of `pros.dat` (i.e., how many rows and how many columns)? Using integer indexing, print the first 6 rows and all columns; again using integer indexing, print the last 6 rows and all columns. 
+
+```{r q8a}
+# YOUR CODE GOES HERE
+# check the dimension of the data set
+dim(pros.dat)
+
+# print first 6 rows with all columns
+pros.dat[1:6, ]
+
+# print last 6 rows and all columns
+pros.dat[92:97, ]
+```
+
+- **8b.** Using the built-in R functions `head()` and `tail()` (i.e., do *not* use integer indexing), print the first 6 rows and all columns, and also the last 6 rows and all columns.
+
+```{r q8b}
+# YOUR CODE GOES HERE
+head(pros.dat) # print the first 6 rows and all columns
+tail(pros.dat) # print the last 6 rows and all columns
+```
+
+- **8c.** Does the matrix `pros.dat` have names assigned to its rows and columns, and if so, what are they? Use `rownames()` and `colnames()` to find out. Note: these would have been automatically created by the `read.table()` function that we used above to read the data file into our R session. To see where `read.table()` would have gotten these names from, open up the data file `pros.dat` in Notepad. Only the column names here are actually informative.
+
+```{r q8c}
+# YOUR CODE GOES HERE
+rownames(pros.dat) # return the row names
+colnames(pros.dat) # return the column names
+```
+
+- **8d.** Using named indexing, pull out the two columns of `pros.dat` that measure the log cancer volume and the log cancer weight, and store the result as a matrix `pros.dat.sub`. (Recall the explanation of variables above.) Check that its dimensions make sense to you, and that its first 6 rows are what you'd expect. Did R automatically assign column names to `pros.dat.sub`?
+
+```{r q8d}
+# YOUR CODE GOES HERE
+pros.dat.sub <- pros.dat[, c('lcavol', 'lweight')] # subtract those 2 columns
+dim(pros.dat.sub) # return the dimension of this matrix
+pros.dat.sub[1:6, ] # check the first 6 rows
+colnames(pros.dat.sub) # check the column name
+```
+
+- **8e.** Using the log cancer weights and log cancer volumes, calculate the log cancer density for the 97 men in the data set (note: density = weight / volume). There are in fact two different ways to do this; the first uses three function calls and one arithmetic operation; the second just uses one arithmetic operation. Note: in either case, you should be able to perform this computation for all 97 men *with a single line of code*, taking advantage of R's ability to vectorize. Write code to do it both ways, and show that both ways lead to the same answer, using `all.equal()`.
+
+```{r q8e}
+# YOUR CODE GOES HERE
+log_density_1 <- log(exp(pros.dat.sub[, 'lweight']) / exp(pros.dat.sub[, 'lcavol'])) # method 1
+
+
+log_density_2 <- pros.dat.sub[, 'lweight'] - pros.dat.sub[, 'lcavol'] # method 2
+
+# check the equality
+all.equal(log_density_1, log_density_2) 
+```
+
+- **8f.** Append the log cancer density to the columns of `pros.dat`, using `cbind()`. The new `pros.dat` matrix should now have 10 columns. Set the last column name to be `ldens`. Print its first 6 rows, to check that you've done all this right.
+
+```{r q8f}
+# YOUR CODE GOES HERE
+# calculate log cancer density
+density <- pros.dat.sub[, 1] / pros.dat.sub[, 2]
+
+# append density to pros.dat matrix
+pros.dat.new <- cbind(pros.dat, ldens = density)
+
+# print new matrix
+head(pros.dat.new)
+```
+
+Q9. Exploratory data analysis with plots
+===
+
+- **9a.** Using `hist()`, produce a histogram of the log cancer volume measurements of the 97 men in the data set; also produce a histogram of the log cancer weight. In each case, use `breaks=20` as an arugment to `hist()`. Comment just briefly on the distributions you see. Then, using `plot()`, produce a scatterplot of the log cancer volume (y-axis) versus the log cancer weight (x-axis). Do you see any kind of relationship? Would you expect to?
+
+```{r q9a}
+# YOUR CODE GOES HERE
+# histogram of log cancer volume 
+hist(pros.dat.sub[, "lcavol"], breaks = 20, main = "Histogram of Log Cancer Volume", xlab = "Log Cancer Volume", col = "lightblue")
+
+# histogram of log cancer weight
+hist(pros.dat.sub[, "lweight"], breaks = 20, main = "Histogram of Log Cancer Weight", xlab = "Log Cancer Weight", col = "lightgreen")
+
+# scatter plot of log cancer volume and log cancer weight
+plot(pros.dat.sub[, "lweight"], pros.dat.sub[, "lcavol"], 
+     main = "Scatterplot of Log Cancer Weight vs. Log Cancer Volume", 
+     xlab = "Log Cancer Weight", ylab = "Log Cancer Volume", 
+     pch = 19, col = "blue")
+```
+
+- **9b.** Produce scatterplots of log cancer weight versus age, and log cancer volume versus age. Do you see relationships here between the age of a patient and the volume/weight of his cancer?
+
+```{r q9b}
+# YOUR CODE GOES HERE
+plot(pros.dat[, "age"], pros.dat.sub[, "lweight"], 
+     main = "Scatterplot of Log Cancer Weight vs. Age", 
+     xlab = "Age", ylab = "Log Cancer Weight", 
+     pch = 19, col = "red")
+
+plot(pros.dat[, "age"], pros.dat.sub[, "lcavol"], 
+     main = "Scatterplot of Log Cancer Volume vs. Age", 
+     xlab = "Age", ylab = "Log Cancer Volume", 
+     pch = 19, col = "green")
+```
+
+- **9c.** Produce a histogram of the log cancer density, and a scatterplot of the log cancer density versus age. Comment on any similarities/differences you see between these plots, and the corresponding ones you produced above for log cancer volume/weight.
+
+```{r q9c}
+# YOUR CODE GOES HERE
+# compute log cancer density
+density <- pros.dat.sub[, 1] / pros.dat.sub[, 2]
+
+# draw the histogram of log cancer density
+hist(density, breaks = 20, main = "Histogram of Log Cancer Density", 
+     xlab = "Log Cancer Density", col = "lightcoral")
+
+# draw scatter plot between log cancer density and age
+plot(pros.dat[, "age"], density, 
+     main = "Scatterplot of Log Cancer Density vs. Age", 
+     xlab = "Age", ylab = "Log Cancer Density", 
+     pch = 19, col = "purple")
+```
+
+- **9d.** Delete the last column, corresponding to the log cancer density, from the `pros.dat` matrix, using negative integer indexing.
+
+```{r q9d}
+# YOUR CODE GOES HERE
+# delete log cancer density column and save it as a new matrix
+pros.dat.updated <- pros.dat[, -ncol(pros.dat)]
+
+# check
+head(pros.dat.updated)
+```
+
+Q10. A bit of Boolean indexing never hurt anyone
+===
+
+- **10a.** The `svi` variable in the `pros.dat` matrix is binary: 1 if the patient had a condition called "seminal vesicle invasion" or SVI, and 0 otherwise. SVI (which means, roughly speaking, that the cancer invaded into the muscular wall of the seminal vesicle) is bad: if it occurs, then it is believed the prognosis for the patient is poorer, and even once/if recovered, the patient is more likely to have prostate cancer return in the future. Compute a Boolean vector called `has.svi`, of length 97, that has a `TRUE` element if a row (patient) in `pros.dat` has SVI, and `FALSE` otherwise. Then using `sum()`, figure out how many patients have SVI.
+
+```{r q10a}
+# YOUR CODE GOES HERE
+# create vector has.svi
+has.svi <- pros.dat[, "svi"] == 1
+head(has.svi)
+tail(has.svi)
+
+# amount of the patients with SVI
+num_with_svi <- sum(has.svi)
+
+# print the results
+num_with_svi
+```
+
+- **10b.** Extract the rows of `pros.dat` that correspond to patients with SVI, and the rows that correspond to patients without it. Call the resulting matrices `pros.dat.svi` and `pros.dat.no.svi`, respectively. You can do this in two ways: using the `has.svi` Boolean vector created above, or using on-the-fly Boolean indexing, it's up to you. Check that the dimensions of `pros.dat.svi` and `pros.dat.no.svi` make sense to you.
+
+```{r q10b}
+# YOUR CODE GOES HERE
+# method 1
+pros.dat.svi <- pros.dat[has.svi, ]
+pros.dat.no.svi <- pros.dat[!has.svi, ]
+
+# method 2
+pros.dat.svi_2 <- pros.dat[pros.dat[, "svi"] == 1, ]
+pros.dat.no.svi_2 <- pros.dat[pros.dat[, "svi"] == 0, ]
+
+
+# check the dimensions of pros.dat.svi and pros.dat.no.svi 
+dim(pros.dat.svi)
+dim(pros.dat.no.svi)
+
+
+```
+
+- **10c.** Using the two matrices `pros.dat.svi` and `pros.dat.no.svi` that you created above, compute the means of each variable in our data set for patients with SVI, and for patients without it. Store the resulting means into vectors called `pros.dat.svi.avg` and `pros.dat.no.svi.avg`, respectively. Hint: for each matrix, you can compute the means with a single call to a built-in R function. What variables appear to have different means between the two groups? 
+
+```{r q10c}
+# YOUR CODE GOES HERE
+pros.dat.svi.avg <- colMeans(pros.dat.svi) # mean value of patients with SVI
+pros.dat.no.svi.avg <- colMeans(pros.dat.no.svi) # mean value of patients without SVI
+
+# print
+print(pros.dat.svi.avg)
+print(pros.dat.no.svi.avg)
+
+#comapre
+d <- pros.dat.svi.avg - pros.dat.no.svi.avg
+print(d)
+
+cat("'lcavol', 'lbph', 'lcp', 'pgg45' and 'lpsa' appear to have different means")
+```
+
+Q11. Computing standard deviations using iteration
+===
+
+- **11a.** Take a look at the starter code below. The first line defines an empty vector `pros.dat.svi.sd` of length `ncol(pros.dat)` (of length 9). The second line defines an index variable `i` and sets it equal to 1. Write a third line of code to compute the standard deviation of the `i`th column of `pros.dat.svi`, using a built-in R function, and store this value in the `i`th element of `pros.dat.svi.sd`. 
+ 
+```{r q11a}
+pros.dat.svi.sd = vector(length=ncol(pros.dat))
+i = 1
+# YOUR CODE GOES HERE
+pros.dat.svi.sd[i] = sd(pros.dat.svi[, i])
+
+# results
+print(pros.dat.svi.sd)
+```
+
+- **11b.** Repeat the calculation as in the previous question, but for patients without SVI. That is, produce three lines of code: the first should define an empty vector `pros.dat.no.svi.sd` of length `ncol(pros.dat)` (of length 9), the second should define an index variable `i` and set it equal to 1, and the third should fill the `i`th element of `pros.dat.no.svi.sd` with the standard deviation of the `i`th column of `pros.dat.no.svi`.
+
+```{r q11b}
+pros.dat.no.svi.sd = vector(length=ncol(pros.dat))
+i = 1
+# YOUR CODE GOES HERE
+pros.dat.no.svi.sd[i] = sd(pros.dat.no.svi[, i])
+
+# result
+pros.dat.no.svi.sd
+```
+
+- **11c.** Write a `for()` loop to compute the standard deviations of the columns of `pros.dat.svi` and `pros.dat.no.svi`, and store the results in the vectors `pros.dat.svi.sd` and `pros.dat.no.svi.sd`, respectively, that were created above. Note: you should have a single `for()` loop here, not two for loops. And if it helps, consider breaking this task down into two steps: as the first step, write a `for()` loop that iterates an index variable `i` over the integers between 1 and the number of columns of `pros.dat` (don't just manually write 9 here, pull out the number of columns programmatically), with an empty body. As the second step, paste relevant pieces of your solution code from Q11a and Q11b into the body of the `for()` loop. Print out the resulting vectors `pros.dat.svi.sd` and `pros.dat.no.svi.sd` to the console. Comment, just briefly (informally), by visually inspecting these standard deviations and the means you computed in Q10c: which variables exhibit large differences in means between the SVI and non-SVI patients, relative to their standard deviations?
+
+```{r q11c}
+# YOUR CODE GOES HERE
+# create a empty vector for storing sd
+pros.dat.svi.sd = vector(length = ncol(pros.dat))
+pros.dat.no.svi.sd = vector(length = ncol(pros.dat))
+
+for (i in 1:ncol(pros.dat)) {
+  pros.dat.svi.sd[i] = sd(pros.dat.svi[, i])
+  pros.dat.no.svi.sd[i] = sd(pros.dat.no.svi[, i])
+}
+
+pros.dat.svi.sd
+pros.dat.no.svi.sd
+```
+
+- **11d.** The code below computes the standard deviations of the columns of `pros.dat.svi` and `pros.dat.no.svi`, and stores them in `pros.dat.svi.sd.master` and `pros.dat.no.svi.sd.master`, respectively, using `apply()`. (We'll learn `apply()` and related functions a bit later in the course.) Remove `eval=FALSE` as an option to the Rmd code chunk, and check using `all.equal()` that the standard deviations you computed in the previous question equal these "master" copies. Note: use `check.names=FALSE` as a third argument to `all.equal()`, which instructs it to ignore the names of its first two arguments. (If `all.equal()` doesn't succeed in both cases, then you must have done something wrong in computing the standard deviations, so go back and fix them!)
+
+```{r, eval=FALSE}
+pros.dat.svi.sd.master = apply(pros.dat.svi, 2, sd)
+pros.dat.no.svi.sd.master = apply(pros.dat.no.svi, 2, sd)
+all.equal(pros.dat.svi.sd, pros.dat.svi.sd.master, check.names=FALSE)
+all.equal(pros.dat.no.svi.sd, pros.dat.no.svi.sd.master, check.names=FALSE)
+```
+
+Q12. Computing t-tests using vectorization
+===
+
+- **12a.** Recall that the **two-sample (unpaired) t-statistic** between data sets $X=(X_1,\ldots,X_n)$ and $Y=(Y_1,\ldots,Y_m)$ is:
+$$
+T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{s_X^2}{n} + \frac{s_Y^2}{m}}},
+$$
+where $\bar{X}=\sum_{i=1}^n X_i/n$ is the sample mean of $X$, $s_X^2 = \sum_{i=1}^n (X_i-\bar{X})^2/(n-1)$ is the sample variance of $X$, and similarly for $\bar{Y}$ and $s_Y^2$. We will compute these t-statistics for all 9 variables in our data set, where $X$ will play the role of one of the variables for SVI patients, and $Y$ will play the role of this variable for non-SVI patients. Start by computing a vector of the denominators of the t-statistics, called `pros.dat.denom`, according to the formula above. Take advantage of vectorization; this calculation should require just a single line of code. Make sure not to include any hard constants (e.g., don't just manually write 21 here for $n$); as always, programmatically define all the relevant quantities. Then compute a vector of t-statistics for the 9 variables in our data set, called `pros.dat.t.stat`, according to the formula above, and using `pros.dat.denom`. Again, take advantage of vectorization; this calculation should require just a single line of code. Print out the t-statistics to the console. 
+
+```{r q12a}
+# YOUR CODE GOES HERE
+pros.dat.t.stat <- (colMeans(pros.dat.svi) - colMeans(pros.dat.no.svi)) / sqrt((apply(pros.dat.svi, 2, var) / nrow(pros.dat.svi)) + (apply(pros.dat.no.svi, 2, var) / nrow(pros.dat.no.svi)))
+pros.dat.t.stat
+```
+
+- **12b.** Given data $X$ and $Y$ and the t-statistic $T$ as defined the last question, the **degrees of freedom** associated with $T$ is:
+$$
+\nu = \frac{(\frac{s_X^2}{n}+\frac{s_Y^2}{m})^2}{\frac{(\frac{s_X^2}{n})^2}{n-1} + 
+  \frac{(\frac{s_Y^2}{m})^2}{m-1}}.
+$$
+Compute the degrees of freedom associated with each of our 9 t-statistics (from our 9 variables), storing the result in a vector called `pros.dat.df`. This might look like a complicated/ugly calculation, but really, it's not too bad: it only involves arithmetic operators, and taking advantage of vectorization, the calculation should only require a single line of code. Hint: to simplify this line of code, it will help to first set short variable names for variables/quantities you will be using, as in `sx = pros.dat.svi.sd`, `n = nrow(pros.dat.svi)`, and so on. Print out these degrees of freedom values to the console.
+
+```{r q12b}
+# YOUR CODE GOES HERE
+pros.dat.df <- (((pros.dat.svi.sd^2 / nrow(pros.dat.svi)) + (pros.dat.no.svi.sd^2 / nrow(pros.dat.no.svi)))^2) / (((pros.dat.svi.sd^2 / nrow(pros.dat.svi))^2 / (nrow(pros.dat.svi) - 1)) + ((pros.dat.no.svi.sd^2 / nrow(pros.dat.no.svi))^2 / (nrow(pros.dat.no.svi) - 1)))
+
+pros.dat.df
+```
+
+- **12c.** The function `pt()` evaluates the distribution function of the t-distribution. E.g.,
+    ```{r, eval=FALSE}
+    pt(x, df=v, lower.tail=FALSE)
+    ```
+    returns the probability that a t-distributed random variable, with `v` degrees of freedom, exceeds the value `x`. Importantly, `pt()` is vectorized: if `x` is a vector, and so is `v`, then the above returns, in vector format: the probability that a t-distributed variate with `v[1]` degrees of freedom exceeds `x[1]`, the probability that a t-distributed variate with `v[2]` degrees of freedom exceeds `x[2]`, and so on. 
+
+    Call `pt()` as in the above line, but replace `x` by the absolute values of the t-statistics you computed for the 9 variables in our data set, and `v` by the degrees of freedom values associated with these t-statistics. Multiply the output by 2, and store it as a vector `pros.dat.p.val`. These are called **p-values** for the t-tests of mean difference between SVI and non-SVI patients, over the 9 variables in our data set. Print out the p-values to the console. Identify the variables for which the p-value is smaller than 0.05 (hence deemed to have a significant difference between SVI and non-SVI patients). Identify the variable with the smallest p-value (the most significant difference between SVI and non-SVI patients).
+
+```{r q12c}
+#  p-value
+pros.dat.p.val <- 2 * pt(abs(pros.dat.t.stat), df = pros.dat.df, lower.tail = FALSE)
+pros.dat.p.val
+
+# find variable with p-value less than 0.05
+significant_vars <- which(pros.dat.p.val < 0.05)
+significant_vars
+
+# find the variable with minimum p-value
+min_p_val_var <- which.min(pros.dat.p.val)
+min_p_val_var
+
+```
+
